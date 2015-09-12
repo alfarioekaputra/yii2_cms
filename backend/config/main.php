@@ -11,8 +11,20 @@ return [
     'basePath' => dirname(__DIR__),
     'controllerNamespace' => 'backend\controllers',
     'bootstrap' => ['log'],
-    'modules' => [],
+    'modules' => [
+        'rbac' => [
+            'class' => 'mdm\admin\Module'
+        ],
+    ],
+    'homeUrl' => '/admin',
     'components' => [
+        'request' => [
+            'baseUrl' => '/admin',
+        ],
+        'urlManager' => [
+            'enablePrettyUrl' => true,
+            'showScriptName' => false,
+        ],
         'user' => [
             'identityClass' => 'common\models\User',
             'enableAutoLogin' => true,
@@ -29,6 +41,7 @@ return [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
+
     ],
     'params' => $params,
 ];

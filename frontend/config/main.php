@@ -11,7 +11,15 @@ return [
     'basePath' => dirname(__DIR__),
     'bootstrap' => ['log'],
     'controllerNamespace' => 'frontend\controllers',
+    'homeUrl' => '/',
     'components' => [
+      'request' => [
+           'baseUrl' => '',
+       ],
+       'urlManager' => [
+           'enablePrettyUrl' => true,
+           'showScriptName' => false,
+       ],
         'user' => [
             'identityClass' => 'common\models\User',
             'enableAutoLogin' => true,
@@ -28,6 +36,7 @@ return [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
+
     ],
     'params' => $params,
 ];
