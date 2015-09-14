@@ -4,11 +4,14 @@
 /* @var $content string */
 
 use backend\assets\AppAsset;
+use mdm\admin\components\MenuHelper;
 use yii\helpers\Html;
 use yii\bootstrap\Nav;
 use yii\bootstrap\NavBar;
-use yii\widgets\Breadcrumbs;
 use common\widgets\Alert;
+use yii\widgets\Breadcrumbs;
+use Zelenin\yii\SemanticUI\collections\Menu;
+use Zelenin\yii\SemanticUI\Elements;
 
 AppAsset::register($this);
 ?>
@@ -27,30 +30,30 @@ AppAsset::register($this);
 
 <div class="wrap">
     <?php
-    NavBar::begin([
-        'brandLabel' => 'My Company',
-        'brandUrl' => Yii::$app->homeUrl,
-        'options' => [
-            'class' => 'navbar-inverse navbar-fixed-top',
-        ],
-    ]);
-    $menuItems = [
-        ['label' => 'Home', 'url' => ['/site/index']],
-    ];
+
     if (Yii::$app->user->isGuest) {
         $menuItems[] = ['label' => 'Login', 'url' => ['/site/login']];
     } else {
+      $menuItems[] =   [
+            'label' => Elements::input(\yii\helpers\Html::input('text', null, null, ['placeholder' => 'search'])),
+            'encode' => false
+        ];
         $menuItems[] = [
             'label' => 'Logout (' . Yii::$app->user->identity->username . ')',
             'url' => ['/site/logout'],
-            'linkOptions' => ['data-method' => 'post']
+            'options' => ['data-method' => 'post']
         ];
     }
-    echo Nav::widget([
-        'options' => ['class' => 'navbar-nav navbar-right'],
-        'items' => $menuItems,
+
+    echo Menu::widget([
+        'inverted' => true,
+        'fixed' => true,
+        'items' => MenuHelper::getAssignedMenu(Yii::$app->user->id),
+        'rightMenuItems' =>
+            $menuItems,
+
+
     ]);
-    NavBar::end();
     ?>
 
     <div class="container">
