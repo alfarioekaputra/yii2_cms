@@ -4,6 +4,7 @@
 /* @var $content string */
 
 use backend\assets\AppAsset;
+use kartik\nav\NavX;
 use mdm\admin\components\MenuHelper;
 use yii\helpers\Html;
 use yii\bootstrap\Nav;
@@ -30,30 +31,41 @@ AppAsset::register($this);
 
 <div class="wrap">
     <?php
+    NavBar::begin([
+        'brandLabel' => 'My Company',
+        'brandUrl' => Yii::$app->homeUrl,
+        'options' => [
+            'class' => 'navbar-inverse navbar-fixed-top',
+        ],
+    ]);
 
     if (Yii::$app->user->isGuest) {
         $menuItems[] = ['label' => 'Login', 'url' => ['/site/login']];
     } else {
-      $menuItems[] =   [
-            'label' => Elements::input(\yii\helpers\Html::input('text', null, null, ['placeholder' => 'search'])),
-            'encode' => false
-        ];
         $menuItems[] = [
             'label' => 'Logout (' . Yii::$app->user->identity->username . ')',
             'url' => ['/site/logout'],
-            'options' => ['data-method' => 'post']
+            'linkOptions' => ['data-method' => 'post']
         ];
     }
 
-    echo Menu::widget([
-        'inverted' => true,
-        'fixed' => true,
+    echo NavX::widget([
+        'options' => ['class' => 'navbar-nav'],
         'items' => MenuHelper::getAssignedMenu(Yii::$app->user->id),
-        'rightMenuItems' =>
-            $menuItems,
-
-
+        'activateParents' => true,
+        'encodeLabels' => false
     ]);
+    echo Nav::widget([
+        'options' => ['class' => 'navbar-nav navbar-right'],
+        'items' => $menuItems,
+        'activateParents' => true,
+        'encodeLabels' => false
+    ]);
+    /*echo Nav::widget([
+        'options' => ['class' => 'navbar-nav navbar-right'],
+        'items' => MenuHelper::getAssignedMenu(Yii::$app->user->id),
+    ]);*/
+    NavBar::end();
     ?>
 
     <div class="container">

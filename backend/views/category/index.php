@@ -1,18 +1,13 @@
 <?php
 /* @var $this yii\web\View */
 use backend\models\Category;
+use yii\bootstrap\ActiveForm;
 use yii\helpers\Html;
-use Zelenin\yii\SemanticUI\widgets\ActiveForm;
 
 ?>
-<h1>category/index</h1>
 
-<p>
-    You may change the content of this page by modifying
-    the file <code><?= __FILE__; ?></code>.
-</p>
-<div class="ui grid">
-    <div class="four wide column">
+<div class="col-sm-12">
+    <div class="col-sm-4">
         <?php
 
             $menus = Category::find()->roots()->all();
@@ -58,7 +53,7 @@ use Zelenin\yii\SemanticUI\widgets\ActiveForm;
 
         ?>
     </div>
-    <div class="eight wide column">
+    <div class="col-sm-8">
         <?php
         $form = ActiveForm::begin([
             'id' => 'create_category',
@@ -68,9 +63,7 @@ use Zelenin\yii\SemanticUI\widgets\ActiveForm;
         echo $form->field($model, 'parent')->textInput()->label('Parents');
         echo $form->field($model, 'name')->textInput();
 
-        echo "<button class='ui primary button'>
-  Save
-</button>";
+        echo "<button class='btn btn-primary'>Save</button>";
 
         ActiveForm::end();
         ?>

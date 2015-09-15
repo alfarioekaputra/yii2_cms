@@ -1,0 +1,222 @@
+<?php
+/**
+ * Author: ptheofan
+ * Created at 09/01/15, 20:28
+ * 
+ * Adds support for jsTree and some other simple functionalities commonly used.
+ */
+
+namespace common\models;
+use creocoder\nestedsets\NestedSetsBehavior;
+use yii\base\ErrorException;
+use yii\helpers\ArrayHelper;
+
+/**
+ * Class NestedSetTrait
+ * @package common\models\traits
+ */
+trait NestedSetTrait
+{
+    /**
+     * @return array
+     */
+    public function behaviors()
+    {
+        return [
+            [
+                'class' => NestedSetsBehavior::className(),
+                'treeAttribute' => 'root',
+                'depthAttribute' => 'level',
+            ],
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    public function transactions()
+    {
+        return [
+            static::SCENARIO_DEFAULT => static::OP_ALL,
+        ];
+    }
+
+    /**
+     * Will return all the the conflicting categories (same root/level/url-key). All conflicting entries
+     * will be returned so, expect at least 2 for each conflict
+     * @return \yii\db\ActiveQuery
+     */
+    public static function getCollidingUrlKeys()
+    {
+        $t = static::tableName();
+        return static::findBySql("
+            select * from {$t} as c1
+            join {$t} as c2 on c1.id != c2.id
+            where
+              c1.root = c2.root
+              and c1.level = c2.level
+              and c1.url_key = c2.url_key
+              and c1.status = 'active'
+              and c2.status = 'active';
+        ");
+    }
+
+    /**
+     * @param $name
+     * @return mixed
+     * @throws ErrorException
+     */
+    public static function createUrlKey($name)
+    {
+        $name = preg_replace('/[^A-Za-z0-9-]/', '-', strtolower($name));
+        $name = preg_replace('/-+/', '-', $name);
+        if (!$name)
+            throw new ErrorException("Could generate url_key from `$name`.");
+
+        return $name;
+    }
+
+    /**
+     * Create a nested array out of nested dataset (multiroot)
+     * @param $categories
+     * @param $root
+     * @param int $left
+     * @param null $right
+     * @param null $parent
+     * @return array
+     */
+    private static function recursiveArrayTreeBuild($categories, $root, $left = 0, $right = null, $parent = null) {
+        $tree = [];
+
+        foreach($categories as $node)
+        {
+            if ($node->lft == $left + 1 && (is_null($right) || $node->rgt < $right) && $root == $node->root)
+            {
+                $entry = ArrayHelper::merge($node->getAttributes(), [
+                    'parentId' => $parent ? $parent->id : null,
+                ]);
+
+                $entry['items'] = static::recursiveArrayTreeBuild($categories, $root, $node->lft, $node->rgt, $node);
+                $tree[] = $entry;
+
+                $left = $node->rgt;
+            }
+        }
+
+        return $tree;
+    }
+
+    /**
+     *
+     */
+    public static function asNestedArray()
+    {
+        $categories = backend\models\Category::find()->addOrderBy(['root' => 'ASC', 'lft' => 'ASC'])->all();
+        $roots = array_filter($categories, function($node) { return $node->id == $node->root; });
+        $tree = [];
+        foreach($roots as $root) {
+            $tree = ArrayHelper::merge($tree, static::recursiveArrayTreeBuild($categories, $root->root));
+        }
+
+        return $tree;
+    }
+
+    /**
+     * @param $tree
+     * @return array
+     */
+    private static function recursiveTreeToFlatArray($tree)
+    {
+        $rVal = [];
+        foreach($tree as $node) {
+            if (isset($node['items'])) {
+                $items = $node['items'];
+                unset($node['items']);
+                $rVal[] = $node;
+                $rVal = array_merge($rVal, static::recursiveTreeToFlatArray($items));
+            }
+        }
+
+        return $rVal;
+    }
+
+    /**
+     * @return array
+     */
+    public static function asFlatArray()
+    {
+        $tree = static::asNestedArray();
+        $rVal = static::recursiveTreeToFlatArray($tree);
+        return $rVal;
+    }
+
+    /**
+     * @return string
+     */
+    public static function nodeStatusToIcon($node)
+    {
+        switch($node instanceof static ? $node->status : $node['status']) {
+            case 'active':
+                return 'fa fa-folder icon-state-warning icon-lg';
+            case 'inactive':
+            case 'deleted':
+                return 'fa fa-eye-slash';
+        }
+
+    }
+
+    /**
+     * @param $node
+     * @param bool $expanded
+     * @param bool $disabled
+     * @return array
+     */
+    public static function nodeToJsTreeObject($node, $expanded = true, $disabled = false)
+    {
+        if ($node instanceof static)
+        {
+            $parent = $node->parent()->one();
+            $item = [
+                'id' => (string)$node->id,
+                'parent' => (string)($node->isRoot() ? '#' : $parent->id),
+                'state' => [
+                    'opened' => $expanded,
+                    'disabled' => $disabled,
+                ],
+                'text' => $node->name,
+                'icon' => self::nodeStatusToIcon($node),
+            ];
+
+        }
+        else
+        {
+            $item = [
+                'id' => (string)$node['id'],
+                'parent' => (string)($node['root'] == $node['id'] ? '#' : $node['parentId']),
+                'state' => [
+                    'opened' => $expanded,
+                    'disabled' => $disabled,
+                ],
+                'text' => $node['name'],
+                'icon' => static::nodeStatusToIcon($node),
+            ];
+        }
+
+        return $item;
+    }
+
+    /**
+     * @param bool $expanded
+     * @param bool $disableRoot
+     * @return array
+     */
+    public static function asJsTreeData($expanded = true, $disableRoot = true)
+    {
+        $nodes = static::asFlatArray();
+        $rVal = [];
+        foreach($nodes as $node)
+            $rVal[] = static::nodeToJsTreeObject($node, $expanded, $disableRoot ? $node['root'] == $node['id'] : false);
+
+        return $rVal;
+    }
+}

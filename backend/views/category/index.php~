@@ -1,0 +1,47 @@
+<?php
+/* @var $this yii\web\View */
+use backend\models\Category;
+use common\models\NestedSetTrait;
+use yii\helpers\Html;
+
+?>
+<h1>category/index</h1>
+
+<p>
+    You may change the content of this page by modifying
+    the file <code><?= __FILE__; ?></code>.
+</p>
+<?php
+
+echo NestedSetTrait::asNestedArray();
+
+$categories = Category::find()->all();
+$depth = 0;
+
+foreach ($categories as $n => $category)
+{
+    if ($category->depth == $depth) {
+        echo Html::endTag('li') . "\n";
+    } elseif ($category->depth > $depth) {
+        echo Html::beginTag('ul') . "\n";
+    } else {
+        echo Html::endTag('li') . "\n";
+
+        for ($i = $depth - $category->depth; $i; $i--) {
+            echo Html::endTag('ul') . "\n";
+            echo Html::endTag('li') . "\n";
+        }
+    }
+
+    echo Html::beginTag('li');
+    echo Html::encode($category->name);
+    $depth = $category->depth;
+}
+
+for ($i = $depth; $i; $i--) {
+    echo Html::endTag('li') . "\n";
+    echo Html::endTag('ul') . "\n";
+}
+
+
+?>
